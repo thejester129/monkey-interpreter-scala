@@ -4,12 +4,10 @@ import lexer.*
 import token.*
 
 class LexerTests extends munit.FunSuite {
-  test("test next token (delimiters)") {
-    val input = "=+(){},;"
+  test("delimiters") {
+    val input = "(){},;"
     val expected =
       List(
-        TokenType.ASSIGN,
-        TokenType.PLUS,
         TokenType.LPAREN,
         TokenType.RPAREN,
         TokenType.LBRACE,
@@ -21,11 +19,33 @@ class LexerTests extends munit.FunSuite {
 
     val lexer = new Lexer(input)
     for (ex <- expected) {
-      assertEquals(ex, lexer.nextToken().tokenType)
+      assertEquals(lexer.nextToken().tokenType, ex)
     }
   }
 
-  test("test skip whitespace") {
+  test("operators") {
+    val input = "=+-!*/<>"
+    val expected =
+      List(
+        TokenType.ASSIGN,
+        TokenType.PLUS,
+        TokenType.MINUS,
+        TokenType.BANG,
+        TokenType.ASTERISK,
+        TokenType.SLASH,
+        TokenType.LT,
+        TokenType.GT,
+        TokenType.EOF
+      )
+
+    val lexer = new Lexer(input)
+    for (ex <- expected) {
+      assertEquals(lexer.nextToken().tokenType, ex)
+    }
+
+  }
+
+  test("skip whitespace") {
     val input = " = + "
     val expected =
       List(
@@ -35,7 +55,23 @@ class LexerTests extends munit.FunSuite {
 
     val lexer = new Lexer(input)
     for (ex <- expected) {
-      assertEquals(ex, lexer.nextToken().tokenType)
+      assertEquals(lexer.nextToken().tokenType, ex)
+    }
+  }
+
+  test("double operators") {
+    val input = "== != = !"
+    val expected =
+      List(
+        TokenType.EQ,
+        TokenType.NOT_EQ,
+        TokenType.ASSIGN,
+        TokenType.BANG
+      )
+
+    val lexer = new Lexer(input)
+    for (ex <- expected) {
+      assertEquals(lexer.nextToken().tokenType, ex)
     }
   }
 
@@ -43,9 +79,14 @@ class LexerTests extends munit.FunSuite {
     val input = """ let five = 5;
                     let ten = 10;
                     let add = fn(x, y) {
-                    x + y;
+                      x + y;
                     };
                     let result = add(five, ten);
+                    if (5 < 10) {
+                      return true;
+                    } else {
+                      return false;
+                    }
                     """
     val expected =
       List(
@@ -85,13 +126,30 @@ class LexerTests extends munit.FunSuite {
         TokenType.IDENT,
         TokenType.RPAREN,
         TokenType.SEMICOLON,
+        TokenType.IF,
+        TokenType.LPAREN,
+        TokenType.INT,
+        TokenType.LT,
+        TokenType.INT,
+        TokenType.RPAREN,
+        TokenType.LBRACE,
+        TokenType.RETURN,
+        TokenType.TRUE,
+        TokenType.SEMICOLON,
+        TokenType.RBRACE,
+        TokenType.ELSE,
+        TokenType.LBRACE,
+        TokenType.RETURN,
+        TokenType.FALSE,
+        TokenType.SEMICOLON,
+        TokenType.RBRACE,
         TokenType.EOF
       )
 
     val lexer = new Lexer(input)
     var position = 0
     for (ex <- expected) {
-      assertEquals(ex, lexer.nextToken().tokenType, s"Position $position")
+      assertEquals(lexer.nextToken().tokenType, ex, s"Position $position")
       position += 1
     }
   }
