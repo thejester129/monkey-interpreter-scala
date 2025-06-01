@@ -1,4 +1,4 @@
-package lexer_tests
+package tests
 
 import lexer.*
 import token.*
