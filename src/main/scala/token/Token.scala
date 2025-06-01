@@ -1,6 +1,8 @@
 package token
 
-case class Token(tokenType: TokenType, literal: String)
+case class Token(tokenType: TokenType, literal: String) {
+  override def toString: String = s"$tokenType: $literal"
+}
 
 object Token {
   private val keywords: Map[String, TokenType] = Map(
