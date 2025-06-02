@@ -9,6 +9,7 @@ import token.TokenType
 import ast.Identifier
 import scala.util.Try
 import scala.util.Success
+import ast.ReturnStatement
 
 class Parser(lexer: Lexer) {
   private var currentToken: Token = null
@@ -34,6 +35,8 @@ class Parser(lexer: Lexer) {
     currentToken.tokenType match {
       case TokenType.LET =>
         parseLetStatement()
+      case TokenType.RETURN =>
+        parseReturnStatement()
       case _ =>
         throw new Exception(s"Unknown token type: ${currentToken.tokenType}")
     }
@@ -64,5 +67,18 @@ class Parser(lexer: Lexer) {
       next = nextToken()
 
     return LetStatement(name, null)
+  }
+
+  private def parseReturnStatement(): ReturnStatement = {
+    var next = nextToken()
+
+    while next.tokenType != TokenType.SEMICOLON
+    do
+      if (next.tokenType == TokenType.EOF) {
+        throw new Exception("Unexpected EOF while parsing let statement")
+      }
+      next = nextToken()
+
+    return ReturnStatement(null)
   }
 }
