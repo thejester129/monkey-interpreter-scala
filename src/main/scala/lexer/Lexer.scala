@@ -15,7 +15,10 @@ class Lexer(val input: String):
     if (position >= input.length - 1) nullChar
     else input.charAt(position + 1)
 
-  def nextToken(): Token = {
+  def peekToken(): Token = nextToken(true)
+
+  def nextToken(peek: Boolean = false): Token = {
+    val originalPos = position
     skipWhitespace()
 
     val (tokenType, literal) = current match
@@ -43,6 +46,10 @@ class Lexer(val input: String):
       case _                      => (TokenType.ILLEGAL, current)
 
     advancePosition()
+
+    if (peek) {
+      position = originalPos
+    }
 
     return new Token(
       tokenType,

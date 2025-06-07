@@ -6,14 +6,36 @@ import token.Token
 import ast.Statement
 import ast.LetStatement
 import token.TokenType
-import ast.Identifier
+import ast.IdentifierExpression
 import scala.util.Try
 import scala.util.Success
 import ast.ReturnStatement
+import ast.ExpressionStatement
+import ast.Expression
+import ast.IntegerLiteral
+import ast.PrefixExpression
+import ast.InfixExpression
 
 class Parser(lexer: Lexer) {
   private var currentToken: Token = null
-  private def nextToken() = lexer.nextToken()
+  private def nextToken(): Token = lexer.nextToken()
+  private def peekNext(): Token = lexer.peekToken()
+
+  private def supportedPrefixTokens = List(
+    TokenType.BANG,
+    TokenType.MINUS
+  )
+
+  private def supportedInfixTokens = List(
+    TokenType.PLUS,
+    TokenType.MINUS,
+    TokenType.SLASH,
+    TokenType.ASTERISK,
+    TokenType.EQ,
+    TokenType.NOT_EQ,
+    TokenType.LT,
+    TokenType.GT
+  )
 
   def parseProgram(): Try[Program] = Try {
     val program = new Program(List())
@@ -38,7 +60,7 @@ class Parser(lexer: Lexer) {
       case TokenType.RETURN =>
         parseReturnStatement()
       case _ =>
-        throw new Exception(s"Unknown token type: ${currentToken.tokenType}")
+        parseExpressionStatement()
     }
   }
 
@@ -49,7 +71,7 @@ class Parser(lexer: Lexer) {
       throw new Exception(s"Expected IDENT, got ${identifier.tokenType}")
     }
 
-    val name = Identifier(identifier.literal)
+    val name = IdentifierExpression(identifier.literal)
 
     val assign = nextToken()
 
@@ -81,4 +103,75 @@ class Parser(lexer: Lexer) {
 
     return ReturnStatement(null)
   }
+
+  private def parseExpressionStatement(): ExpressionStatement = {
+    var first = currentToken.copy()
+
+    var expression =
+      ExpressionStatement(first, parseExpression(Precedence.LOWEST))
+
+    // optional ; at end of expressions
+    if (peekNext().tokenType == TokenType.SEMICOLON) {
+      nextToken()
+    }
+
+    return expression
+  }
+
+  private def parseExpression(precedence: Precedence): Expression = {
+    val leftExp = currentToken.tokenType match {
+      case TokenType.IDENT =>
+        IdentifierExpression(currentToken.literal)
+      case TokenType.INT =>
+        IntegerLiteral(currentToken.literal.toInt)
+      case t if supportedPrefixTokens.contains(t) => parsePrefixExpression()
+      case _ => throw new Exception("no prefix parse fn")
+    }
+
+    var exp = leftExp
+
+    while peekNext().tokenType != TokenType.SEMICOLON && precedence.ordinal < peekPrecedence().ordinal
+    do
+      var supportsInfixFn = supportedInfixTokens.contains(peekNext().tokenType)
+      if (!supportsInfixFn) {
+        return leftExp
+      }
+
+      currentToken = nextToken()
+
+      exp = parseInfixExpression(exp)
+
+    return exp
+  }
+
+  private def parsePrefixExpression(): PrefixExpression = {
+    val operatorToken = currentToken.copy()
+
+    currentToken = nextToken()
+
+    val operand = parseExpression(Precedence.PREFIX)
+
+    return PrefixExpression(operatorToken, operatorToken.literal, operand)
+  }
+
+  private def parseInfixExpression(left: Expression): InfixExpression = {
+    val operatorToken = currentToken.copy()
+
+    val precedence = currentPrecedence()
+
+    currentToken = nextToken()
+
+    val right = parseExpression(precedence)
+
+    return InfixExpression(operatorToken, left, operatorToken.literal, right)
+  }
+
+  private def currentPrecedence(): Precedence = {
+    return getPrecedence(currentToken.tokenType)
+  }
+
+  private def peekPrecedence(): Precedence = {
+    return getPrecedence(peekNext().tokenType)
+  }
+
 }

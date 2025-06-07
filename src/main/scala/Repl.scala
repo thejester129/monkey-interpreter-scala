@@ -1,6 +1,7 @@
 import scala.io.StdIn.readLine
 import lexer.Lexer
 import token.TokenType
+import parser.Precedence
 
 @main def repl(): Unit =
   println()
